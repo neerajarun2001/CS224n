@@ -35,7 +35,6 @@ def pad_sents(sents, pad_token):
         pad, odd_buff = diff // 2, diff % 2
         sents_padded.append([pad_token]*pad + s + [pad_token]*(pad + odd_buff))
     ### END YOUR CODE
-    print(len(sents_padded[0]), len(sents[0]))
 
     return sents_padded
 
