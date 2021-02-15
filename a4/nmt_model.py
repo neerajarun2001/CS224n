@@ -73,7 +73,7 @@ class NMT(nn.Module):
         ###     Dropout Layer:
         ###         https://pytorch.org/docs/stable/nn.html#torch.nn.Dropout
         self.encoder = nn.LSTM(self.embed_size, self.hidden_size, bidirectional=True)
-        self.decoder = nn.LSTM(self.embed_size, self.hidden_size)
+        self.decoder = nn.LSTMCell(self.embed_size, self.hidden_size)
         self.h_projection = nn.Linear(self.hidden_size, 2*self.hidden_size, bias=False)
         self.c_projection = nn.Linear(self.hidden_size,2*self.hidden_size, bias=False)
         self.att_projection = nn.Linear(self.hidden_size,2*self.hidden_size, bias=False)
@@ -168,6 +168,12 @@ class NMT(nn.Module):
         ###         https://pytorch.org/docs/stable/torch.html#torch.cat
         ###     Tensor Permute:
         ###         https://pytorch.org/docs/stable/tensors.html#torch.Tensor.permute
+        X = rnn.pack_padded_sequence(self.model_embeddings(source_padded))
+        output, ht, ct = None, None, None
+        for t in range(source_lengths[0]):
+            output, (ht, ct) = self.encoder(X[t])
+            print(ht)
+        
 
 
         ### END YOUR CODE
