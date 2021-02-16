@@ -76,7 +76,7 @@ class NMT(nn.Module):
         self.decoder = nn.LSTMCell(embed_size, self.hidden_size)
         self.h_projection = nn.Linear(2*self.hidden_size, self.hidden_size, bias=False)
         self.c_projection = nn.Linear(2*self.hidden_size,self.hidden_size, bias=False)
-        self.att_projection = nn.Linear(self.hidden_size,2*self.hidden_size, bias=False)
+        self.att_projection = nn.Linear(2*self.hidden_size,self.hidden_size, bias=False)
         self.combined_output_projection = nn.Linear(self.hidden_size,3*self.hidden_size, bias=False) 
         self.target_vocab_projection = nn.Linear(len(self.vocab.tgt), self.hidden_size, bias=False) 
         self.dropout = nn.Dropout(self.dropout_rate) 
@@ -195,7 +195,7 @@ class NMT(nn.Module):
         @returns combined_outputs (Tensor): combined output tensor  (tgt_len, b,  h), where
                                         tgt_len = maximum target sentence length, b = batch_size,  h = hidden size
         """
-        # Chop of the <END> token for max length sentences.
+        # Chop off the <END> token for max length sentences.
         target_padded = target_padded[:-1]
 
         # Initialize the decoder state (hidden and cell)
@@ -243,8 +243,15 @@ class NMT(nn.Module):
         ###         https://pytorch.org/docs/stable/torch.html#torch.cat
         ###     Tensor Stacking:
         ###         https://pytorch.org/docs/stable/torch.html#torch.stack
-
-
+        enc_hiddens_proj = self.att_projection(enc_hiddens)
+        Y = self.model_embeddings.target(target_padded)
+        for Y_t in torch.split(Y, 1):
+            Y_t = torch.squeeze(Y_t)
+            Ybar_t = torch.cat((Y_t, o_prev), 1)
+            dec_state, combined_output, e_t = self.step(Ybar_t, dec_state, enc_hiddens, enc_hiddens_proj, enc_masks)
+            combined_outputs.append(combined_output)
+            o_prev = combined_output
+        combined_outputs = torch.stack(combined_outputs, 0)
         ### END YOUR CODE
 
         return combined_outputs
@@ -304,6 +311,7 @@ class NMT(nn.Module):
 
 
         ### END YOUR CODE
+
 
         # Set e_t to -inf where enc_masks has 1
         if enc_masks is not None:
