@@ -73,7 +73,7 @@ class NMT(nn.Module):
         ###     Dropout Layer:
         ###         https://pytorch.org/docs/stable/nn.html#torch.nn.Dropout
         self.encoder = nn.LSTM(embed_size, self.hidden_size, bidirectional=True)
-        self.decoder = nn.LSTMCell(embed_size, self.hidden_size)
+        self.decoder = nn.LSTMCell(self.hidden_size + embed_size, self.hidden_size)
         self.h_projection = nn.Linear(2*self.hidden_size, self.hidden_size, bias=False)
         self.c_projection = nn.Linear(2*self.hidden_size,self.hidden_size, bias=False)
         self.att_projection = nn.Linear(2*self.hidden_size,self.hidden_size, bias=False)
@@ -308,8 +308,9 @@ class NMT(nn.Module):
         ###         https://pytorch.org/docs/stable/torch.html#torch.unsqueeze
         ###     Tensor Squeeze:
         ###         https://pytorch.org/docs/stable/torch.html#torch.squeeze
-
-
+        dec_state = self.decoder(Ybar_t, dec_state)
+        dec_hidden, dec_cell = dec_state
+        e_t = torch.squeeze(torch.bmm(enc_hiddens_proj, dec_hidden.unsqueeze(2)))
         ### END YOUR CODE
 
 
