@@ -165,7 +165,6 @@ class CharCorruptionDataset(Dataset):
     def __len__(self):
         # returns the length of the dataset
         return len(self.data)
-
     def __getitem__(self, idx):
         # TODO [part e]: see spec above
         raise NotImplementedError
@@ -201,4 +200,3 @@ if __name__ == '__main__':
     else:
         raise ValueError("Unknown dataset type in command line args: {}"
                 .format(args.dataset_type))
-
