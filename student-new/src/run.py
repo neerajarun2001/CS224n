@@ -143,6 +143,8 @@ if __name__ == '__main__':
                 x = line.split('\t')[0]
                 x = x + '⁇'
                 x = torch.tensor([pretrain_dataset.stoi[s] for s in x], dtype=torch.long)[None,...].to(device)
+                x.to(device)
+                gpt.to(device)
                 pred = utils.sample(gpt, x, 32, sample=False)[0]
                 completion = ''.join([pretrain_dataset.itos[int(i)] for i in pred])
                 pred = completion.split('⁇')[1]
