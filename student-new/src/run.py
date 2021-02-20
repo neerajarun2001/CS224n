@@ -127,6 +127,7 @@ if __name__ == '__main__':
      
         gpt_trainer = trainer.Trainer(gpt, finetune_dataset, None, tconf) 
         gpt_trainer.train()
+        gpt = gpt.to(device)
         torch.save(gpt.state_dict(), args.writing_params_path)
 
     elif args.function == 'evaluate':
