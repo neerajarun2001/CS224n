@@ -61,17 +61,18 @@ class SynthesizerAttention(nn.Module):
         super().__init__()
         assert config.n_embd % config.n_head == 0
         # NEW learnable weights
-        self.w1 = nn.Linear(config.n_embd, config.n_embd)
+        print(config.n_embd)
+        self.w1 = nn.Linear(config.n_embd, config.n_embd // config.n_head)
         self.w2 = nn.Parameter(torch.zeros(config.n_embd // config.n_head,
             config.block_size-1))
         self.b2 = nn.Parameter(torch.zeros(config.block_size-1))
         # value projection
-        self.value = nn.Linear(config.n_embd, config.n_embd)
+        self.value = nn.Linear(config.block_size-1, config.n_embd // config.n_head)
         # regularization
         self.attn_drop = nn.Dropout(config.attn_pdrop)
         self.resid_drop = nn.Dropout(config.resid_pdrop)
         # output projection
-        self.proj = nn.Linear(config.n_embd, config.n_embd)
+        self.proj = nn.Linear(config.n_embd // config.n_head, config.n_embd)
         # causal mask to ensure that attention is only applied to the left in
         #     the input sequence
         self.register_buffer("mask", torch.tril(
@@ -92,16 +93,13 @@ class SynthesizerAttention(nn.Module):
         B, T, C = x.size()
 
         # calculate query, key, values for all heads in batch and move head forward to be the batch dim
-        v = self.value(x).view(B, T, self.n_head, C // self.n_head).transpose(1, 2) # (B, nh, T, hs)
-
+        v = self.value(x.transpose(-2, -1)) # (B, d, d/h)
         # synthesizer attention
-        print(x.size(), self.w2.size(), self.b2.size())
-        att = F.relu(self.w1(x)) @ self.w2 + self.b2
+        att = F.relu(self.w1(x)) @ self.w2 + self.b2 # (B, T, T)
         att = att.masked_fill(self.mask[:,:,:T,:T] == 0, -1e10) # todo: just use float('-inf') instead?
-        att = F.softmax(att, dim=-1)
+        att = F.softmax(att, dim=-1).squeeze(0)
         att = self.attn_drop(att)
-        y = att @ v
-        y = y.transpose(1, 2).contiguous().view(B, T, C) # re-assemble all head outputs side by side
+        y = att @ x @ v # (B, l, d/h)
 
         # output projection
         y = self.resid_drop(self.proj(y))
